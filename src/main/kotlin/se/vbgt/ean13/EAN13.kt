@@ -50,24 +50,24 @@ class EAN13(number: String) {
 
     fun saveImageTo(path: String) {
         val (image, imageG) = getEmptyImageGraphics(95, 40)
-        val (imageQuietZone, imageQuietZoneG) = getEmptyImageGraphics(95, 5)
+        val (imageQuietZone, imageQuietZoneG) = getEmptyImageGraphics(95, 10)
         modules().forEachIndexed { i, c ->
             if (c == '|') {
                 imageG.drawLine(i, 0, i+1, 80)
                 if (i in (0..2) || i in (45..49) || i in (93..95))
-                    imageQuietZoneG.drawLine(i, 0, i+1, 10)
+                    imageQuietZoneG.drawLine(i, 0, i+1, 20)
             }
         }
 
-        val (combined, combinedG) = getEmptyImageGraphics(105, 55)
-        combinedG.drawImage(image, 5, 5, null)
-        combinedG.drawImage(imageQuietZone, 5, 45, null)
+        val (combined, combinedG) = getEmptyImageGraphics(102, 55)
+        combinedG.drawImage(image, 5, 2, null)
+        combinedG.drawImage(imageQuietZone, 5, 42, null)
 
         combinedG.color = Color.BLACK
-        combinedG.font = Font("Serif", Font.PLAIN, 8)
-        combinedG.drawString(ean13Number.substring(0, 1), 0, 52)
-        combinedG.drawString(ean13Number.substring(2, 7).toCharArray().joinToString(" "), 12, 52)
-        combinedG.drawString(ean13Number.substring(8, 13).toCharArray().joinToString(" "), 58, 52)
+        combinedG.font = Font("TimesRoman", Font.PLAIN, 10)
+        combinedG.drawString(ean13Number.substring(0, 1), 0, 51)
+        combinedG.drawString(ean13Number.substring(1, 7).toCharArray().joinToString(""), 12, 51)
+        combinedG.drawString(ean13Number.substring(7, 13).toCharArray().joinToString(""), 59, 51)
 
         ImageIO.write(combined, "png", File(path))
     }
