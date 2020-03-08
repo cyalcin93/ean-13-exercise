@@ -1,8 +1,8 @@
 package se.vbgt.ean13
 
 import java.awt.Color
+import java.awt.Font
 import java.awt.Graphics
-import java.awt.Graphics2D
 import java.awt.image.BufferedImage
 import java.io.File
 import javax.imageio.ImageIO
@@ -39,7 +39,7 @@ class EAN13(number: String) {
             'R' -> getRCode(digit).getStringRepresentation()
             'L' -> getRCode(digit).invertedRCode().getStringRepresentation()
             'G' -> getRCode(digit).reversed().getStringRepresentation()
-            else -> "not valid" // beautiful... not
+            else -> throw InvalidGroupException()
         }
 
         private fun getRCode(digit: Char): String = rCodeDigitMap[Character.getNumericValue(digit)]
@@ -48,28 +48,37 @@ class EAN13(number: String) {
             this.toCharArray().map { if( it == '0') 1 else 0 }.joinToString("")
     }
 
-    fun saveImageTo(path: String): Unit {
-        val image = BufferedImage(95, 40, BufferedImage.TYPE_INT_RGB)
-        val imageG = image.graphics
-        imageG.fillRect(0, 0, 95, 40) // white bg
-        imageG.color = Color.BLACK // black lines
-        modules().forEachIndexed { i, c -> if (c == '|') imageG.drawLine(i, 0, i+1, 80) }
+    fun saveImageTo(path: String) {
+        val (image, imageG) = getEmptyImageGraphics(95, 40)
+        val (imageQuietZone, imageQuietZoneG) = getEmptyImageGraphics(95, 5)
+        modules().forEachIndexed { i, c ->
+            if (c == '|') {
+                imageG.drawLine(i, 0, i+1, 80)
+                if (i in (0..2) || i in (45..49) || i in (93..95))
+                    imageQuietZoneG.drawLine(i, 0, i+1, 10)
+            }
+        }
 
-        val imageQuietZone = BufferedImage(95, 5, BufferedImage.TYPE_INT_RGB)
-        val imageQuietZoneG = imageQuietZone.graphics
-        imageQuietZoneG.fillRect(0, 0, 95, 5)
-        imageQuietZoneG.color = Color.BLACK
-        modules().forEachIndexed { i, c -> when (i) {
-            in (0..2), in (45..49), in (93..95) -> if (c == '|') imageQuietZoneG.drawLine(i, 0, i+1, 10)
-        } }
+        val (combined, combinedG) = getEmptyImageGraphics(105, 55)
+        combinedG.drawImage(image, 5, 5, null)
+        combinedG.drawImage(imageQuietZone, 5, 45, null)
 
-        val combined = BufferedImage(105, 55, BufferedImage.TYPE_INT_RGB)
-        val combinedG = combined.graphics
-        combinedG.fillRect(0, 0, 105, 55)
-        combined.graphics.drawImage(image, 5, 5, null)
-        combined.graphics.drawImage(imageQuietZone, 5, 45, null)
+        combinedG.color = Color.BLACK
+        combinedG.font = Font("Serif", Font.PLAIN, 8)
+        combinedG.drawString(ean13Number.substring(0, 1), 0, 52)
+        combinedG.drawString(ean13Number.substring(2, 7).toCharArray().joinToString(" "), 12, 52)
+        combinedG.drawString(ean13Number.substring(8, 13).toCharArray().joinToString(" "), 58, 52)
 
         ImageIO.write(combined, "png", File(path))
+    }
+
+    private fun getEmptyImageGraphics(width: Int, height: Int): Pair<BufferedImage, Graphics> {
+        val image = BufferedImage(width, height, BufferedImage.TYPE_INT_RGB)
+        val graphics = image.graphics
+        graphics.fillRect(0, 0, width, height) // white bg
+        graphics.color = Color.BLACK // black lines
+
+        return Pair(image, graphics)
     }
 
     private fun correctCheckDigit(ean13Number: String): Boolean {
