@@ -1,5 +1,12 @@
 package se.vbgt.ean13
 
+import java.awt.Color
+import java.awt.Graphics
+import java.awt.Graphics2D
+import java.awt.image.BufferedImage
+import java.io.File
+import javax.imageio.ImageIO
+
 class EAN13(number: String) {
     private val ean13Number = number.replace(" ", "")
 
@@ -41,7 +48,29 @@ class EAN13(number: String) {
             this.toCharArray().map { if( it == '0') 1 else 0 }.joinToString("")
     }
 
-    fun saveImageTo(path: String): Unit = TODO("Bonus")
+    fun saveImageTo(path: String): Unit {
+        val image = BufferedImage(95, 40, BufferedImage.TYPE_INT_RGB)
+        val imageG = image.graphics
+        imageG.fillRect(0, 0, 95, 40) // white bg
+        imageG.color = Color.BLACK // black lines
+        modules().forEachIndexed { i, c -> if (c == '|') imageG.drawLine(i, 0, i+1, 80) }
+
+        val imageQuietZone = BufferedImage(95, 5, BufferedImage.TYPE_INT_RGB)
+        val imageQuietZoneG = imageQuietZone.graphics
+        imageQuietZoneG.fillRect(0, 0, 95, 5)
+        imageQuietZoneG.color = Color.BLACK
+        modules().forEachIndexed { i, c -> when (i) {
+            in (0..2), in (45..49), in (93..95) -> if (c == '|') imageQuietZoneG.drawLine(i, 0, i+1, 10)
+        } }
+
+        val combined = BufferedImage(105, 55, BufferedImage.TYPE_INT_RGB)
+        val combinedG = combined.graphics
+        combinedG.fillRect(0, 0, 105, 55)
+        combined.graphics.drawImage(image, 5, 5, null)
+        combined.graphics.drawImage(imageQuietZone, 5, 45, null)
+
+        ImageIO.write(combined, "png", File(path))
+    }
 
     private fun correctCheckDigit(ean13Number: String): Boolean {
         val checkDigit = Character.getNumericValue(ean13Number.last())
